@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint
+from flask import Flask, jsonify, Blueprint
 import sqlite3
 
 try:
@@ -43,17 +43,17 @@ def create_app(config_name):
 
     app = Flask(__name__, static_url_path="/static")
     print(f'The current config is "{config_name}"')
-
+    
     db = sqlite3.connect(config[config_name].DB_NAME)
     cur = db.cursor()
 
     try:
       cur.executescript("""
-        CREATE TABLE IF NOT EXISTS things(
-          id INTEGER PRIMARY KEY,
-          title TEXT,
-          description TEXT,
-          status INTEGER DEFAULT 0
+        CREATE TABLE IF NOT EXISTS datapoints(
+          device_id TEXT,
+          timestamp TEXT,
+          trip TEXT,
+          data TEXT
         );
       """)
     except Exception as e:

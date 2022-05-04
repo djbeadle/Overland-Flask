@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, json
 from flask import g, current_app
 
 def get_db():
@@ -9,6 +9,50 @@ def get_db():
     if db is None:
         db = g._database = sqlite3.connect(current_app.config['DB_NAME'])
     return db
+
+def record_point(point, trip):
+    db = get_db()
+    cur = db.cursor()
+    print(json.dumps(point))
+    try:
+        cur.execute(
+            "INSERT INTO datapoints (device_id, timestamp, data, trip) VALUES (?, ?, ?, ?);",
+            [point['properties']['device_id'], point['properties']['timestamp'], json.dumps(point), trip ]
+        )
+        db.commit()
+    except Exception as e:
+        print("Unable to store this data point:")
+        print(e)
+        raise e
+
+def get_points(device_id='iPhone13', limit=2000, mod=20, time='all'):
+    db = get_db()
+    cur = db.cursor()
+
+    query = "SELECT data FROM datapoints WHERE device_id = ? AND rowid % ? = 0"
+    if time.lower() == 'all':
+        pass
+    else:
+        query += f' AND date(timestamp) >= date(\'now\', \'-{time} day\');'
+
+    cur.execute(
+        # "SELECT data FROM datapoints WHERE device_id = ? AND rowid % 20 = 0 ORDER BY timestamp DESC LIMIT ?;",
+        query,
+        [
+            device_id, 
+            mod
+        ]
+    ) 
+    return cur.fetchall()
+
+def count_points(device_id='iPhone13'):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "SELECT count(data) FROM datapoints WHERE device_id = ?;",
+       [device_id]
+    )
+    return cur.fetchone()[0]
 
 def create_thing(thing, description, status):
     db = get_db()
@@ -21,7 +65,6 @@ def create_thing(thing, description, status):
         )
         rows = cur.fetchall()
         db.commit()
-        db.close()
         return rows
 
     except Exception as e:

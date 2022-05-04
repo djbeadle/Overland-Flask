@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+crossorigin=""/>
+<!-- Make sure you put this AFTER Leaflet's CSS -->
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<p>{{count}} points recorded</p>
+<div style="width: 90vw; height: 90vh; margin-left: auto; margin-right: auto;" id="map"></div>
+
+<script>
+var map = L.map('map').setView([40.71, -74], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox/streets-v11',
+    tileSize: 512,
+    zoomOffset: -1,
+    accessToken: 'your.mapbox.access.token'
+}).addTo(map);
+
+function getColor(x) {
+    return x < 10     ?    '#bd0026':
+        x < 20     ?   '#f03b20':
+        x < 30     ?   '#fd8d3c':
+        x < 50     ?   '#fecc5c':
+        '#ffffb2' ;
+};
+
+const latlngs = [
+    {% for point in points %}
+        {% set as_json = loads(point[0]) %}
+        {{ as_json|safe }},
+    {% endfor %}
+];
+
+var geojsonMarkerOptions = {
+    radius: 4,
+    fillColor: "#ff7800",
+    color: "#000",
+    weight: 1,
+    opacity: 1,
+    fillOpacity: 0.8
+};
+
+L.geoJson(latlngs, {
+     pointToLayer: function (feature, latlng) {
+         return L.circleMarker(latlng, geojsonMarkerOptions);
+     },
+     style: (feature) => {
+         return {
+             'fillColor': getColor(feature.properties.altitude),
+             'stroke': false,
+         }
+     }
+}).addTo(map);
+
+{% if gpx %}
+const gpx_files = [
+    '2022-04-02',
+    // '2022-05-01.gpx',
+    '2021-09-04',
+    '2021-09-11',
+    '2021-08-07',
+    '2021-05-19',
+    '2020-11-06',
+    '2020-11-04',
+    '2020-09-05',
+    '2021-05-16',
+    '2021-08-02',
+    '2021-09-29',
+    '2021-08-25',
+    '2022-01-22'
+]
+{% endif %}
+
+for (const file of gpx_files){
+    new L.GPX(`/static/${file}.gpx`, {async: true, marker_options: {startIconUrl: null, endIconUrl: null, shadowUrl: null }}).on('loaded', function(e) {
+          map.fitBounds(e.target.getBounds());
+    }).addTo(map);
+};
+</script>
+{% endblock %}

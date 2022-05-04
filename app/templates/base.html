@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <head>
     <link rel='stylesheet' href='https://cdn.jsdelivr.net/gh/kognise/water.css@latest/dist/light.css'>
+    {% block extra_head %}
+    {% endblock %}
 </head>
-<body>
-<h1>{{ config['APP_NAME'] }}</h1>
+<body style="width: 100vw; margin: 0; padding: 0;">
 {% block content %}
 {% endblock %}
 
