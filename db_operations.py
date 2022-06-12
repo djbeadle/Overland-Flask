@@ -12,6 +12,12 @@ def get_db():
     return db
 
 
+def get_devices():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT device_id FROM datapoints_2 GROUP BY device_id ORDER BY count(*) DESC;")
+    return cur.fetchall()
+
 # SELECT JSON_EXTRACT(data, '$.properties.altitude') FROM datapoints ORDER BY rowid DESC LIMIT 1;
 def record_point(point, trip):
     db = get_db()

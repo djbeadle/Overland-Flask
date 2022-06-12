@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+crossorigin=""/>
+<!-- Make sure you put this AFTER Leaflet's CSS -->
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+<script src="/static/luxon.min.js"></script>
+
+<style>
+    body {
+        max-width: unset;
+    }
+    .leaflet-tile-pane {
+        filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+    }
+    #map {
+        --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate (0.3) brightness(0.7);
+        width: 90vw;
+        height: 90vh;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<form action="/info_query" method="post" id="filter_form">
+    <fieldset style="display: flex; flex-direction: row;">
+        <label>
+            Device Id:
+            <select name="device_id" id="device_id">
+                {% for device_id in device_ids %}
+                    {% if loop.first %}
+                        <option default>{{ device_id[0] }}</option>
+                    {% endif %}
+                    <option>{{ device_id[0] }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Time:
+            <select name="time" id="time">
+                <option default value="all">All</option>
+                <option value="2">Last 2 days</option>
+                <option value="7">Last 7 days</option>
+                <option value="2">Last 14 days</option>
+                <option value="2">Last 30 days</option>
+            </select>
+        </label>
+
+        <label>
+            Mod:
+            <select name="mod" id="time">
+                <option default >20</option>
+                <option>2</option>
+                <option>5</option>
+                <option>10</option>
+                <option>25</option>
+            </select>
+        </label>
+
+        <label>
+            Filter by:
+            <select name="filter_by">
+                <option default value="">No Filters</option>
+                <option value="battery_level">Battery Less Than</option>
+                <option value="speed">Speed Greater Than</option>
+            </select>
+        </label>
+
+        <label>
+            Filter value:
+            <input name="filter_value" type="number">
+        </label>
+
+        <button type="submit">Apply Filter</button>
+    </fieldset>
+
+</form>
+
+<p>{{ info }}</p>
+<div id="map"></div>
+
+<script>
+var map = L.map('map').setView([40.71, -74], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox/streets-v11',
+    tileSize: 512,
+    zoomOffset: -1,
+    accessToken: 'your.mapbox.access.token'
+}).addTo(map);
+
+L.marker([40.70292, -74.01384]).addTo(map);
+L.marker([40.71813, -73.95756]).addTo(map);
+L.marker([40.68168, -73.95269]).addTo(map);
+L.marker([40.74763, -73.95441]).addTo(map);
+L.marker([40.78150, -73.96991]).addTo(map);
+L.marker([40.69616, -73.90985]).addTo(map);
+
+function _greaterThanDays(dt_obj, now_dt_obj, days){
+    if (dt_obj > now_dt_obj.minus({ 'days': days })){
+        return true;
+    }
+
+    return false;
+}
+
+
+function getColorTime(x){
+    const dt_obj = luxon.DateTime.fromISO(x);
+    const now_dt = luxon.DateTime.now();
+
+    return _greaterThanDays(dt_obj, now_dt, 1) ? '#1eff00':
+        _greaterThanDays(dt_obj, now_dt, 2) ? '#4fff98':
+        _greaterThanDays(dt_obj, now_dt, 3) ? '#89ff00':
+        _greaterThanDays(dt_obj, now_dt, 7) ? '#f3ff00':
+        _greaterThanDays(dt_obj, now_dt, 14) ? '#ffd500':
+        _greaterThanDays(dt_obj, now_dt, 21) ? '#ffa000':
+        _greaterThanDays(dt_obj, now_dt, 28) ? '#ff6b00':
+        _greaterThanDays(dt_obj, now_dt, 35) ? '#ff3500':
+        '#ff0000';
+};
+
+function getRadiusTime(x){
+    const dt_obj = luxon.DateTime.fromISO(x);
+    const now_dt = luxon.DateTime.now();
+
+    return _greaterThanDays(dt_obj, now_dt, 1) ? 6:
+        _greaterThanDays(dt_obj, now_dt, 2) ? 5:
+        _greaterThanDays(dt_obj, now_dt, 7) ? 4:
+        _greaterThanDays(dt_obj, now_dt, 28) ? 3:
+        2;
+};
+
+
+function getColorBattery(x) {
+    return x < 0.1 ? '#ff0000':
+        x < 0.25 ? '#ff3500':
+        x < 0.4 ? '#ff6b00':
+        x < 0.5 ? '#ffa000':
+        x < 0.6 ? '#ffd500':
+        x < 0.75 ? '#f3ff00':
+        x < 0.85 ? '#89ff00':
+        x < 0.9 ? '#53ff00':
+        '#1eff00';
+};
+
+function getColorAltitude(x) {
+    return x < 10     ?    '#bd0026':
+        x < 20     ?   '#f03b20':
+        x < 30     ?   '#fd8d3c':
+        x < 50     ?   '#fecc5c':
+        '#ffffb2' ;
+};
+
+const latlngs = [
+    {% for point in points %}
+        { "type": "Feature", 'geometry': {"type": "Point", "coordinates": ['{{point.lat}}', '{{point.long}}']}, 'properties': {'timestamp': '{{point.timestamp}}', 'speed': '{{point.speed}}', 'battery_level': '{{point.battery_level}}'}}, 
+    {% endfor %}
+];
+
+var geojsonMarkerOptions = {
+    radius: 2,
+    fillColor: "#ff7800",
+    color: "#000",
+    weight: 1,
+    opacity: 1,
+    fillOpacity: 0.8
+};
+
+var popupContent = L.popup()
+    .setContent('<p>Hello world!<br />This is a nice popup.</p>')
+
+L.geoJson(latlngs, {
+     pointToLayer: function (feature, latlng) {
+         return L.circleMarker(latlng, geojsonMarkerOptions).bindPopup(`<pre>${JSON.stringify(feature, null, 2)}</pre>`).openPopup();
+
+         /*return L.circleMarker(latlng, geojsonMarkerOptions).on('click', (e) => {
+             console.log(e.latlng);
+             // fetch('/detail?' + new URLSearchParams({ coords: e.getLatLng() }));
+         })*/
+     },
+     style: (feature) => {
+         return {
+             'fillColor': getColorTime(feature.properties.timestamp),
+             'radius': getRadiusTime(feature.properties.timestamp),
+             // 'fillColor': getColorBattery(feature.properties.battery_level),
+             // 'fillColor': getColor(feature.properties.altitude),
+             'stroke': false,
+         }
+     }
+}).addTo(map);
+
+{% if gpx %}
+    const gpx_files = [
+        '2022-04-02',
+        // '2022-05-01.gpx',
+        '2021-09-04',
+        '2021-09-11',
+        '2021-08-07',
+        '2021-05-19',
+        '2020-11-06',
+        '2020-11-04',
+        '2020-09-05',
+        '2021-05-16',
+        '2021-08-02',
+        '2021-09-29',
+        '2021-08-25',
+        '2022-01-22'
+    ]
+
+    for (const file of gpx_files){
+        new L.GPX(`/static/${file}.gpx`, {async: true, marker_options: {startIconUrl: null, endIconUrl: null, shadowUrl: null }}).on('loaded', function(e) {
+              map.fitBounds(e.target.getBounds());
+        }).addTo(map);
+    };
+{% endif %}
+</script>
+{% endblock %}

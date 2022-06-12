@@ -1,7 +1,7 @@
 from http.client import HTTPResponse
 from flask import jsonify, request, render_template, Response
 from app.landing import landing_bp
-from db_operations import create_thing, list_all_things, record_point, get_points, count_points
+from db_operations import create_thing, list_all_things, record_point, get_points, count_points, get_devices
 import operator
 
 import json
@@ -66,6 +66,10 @@ def info_iphone_last_day():
     )
 
 def filter_property(x, prop_name, op, value):
+    """
+    Given an array of rows 'x' and a property name 'prop_name' contained in 'x'.
+    Run 'op(x[n][prop_name], value)' return a list of values that return true
+    """
     out = []
     for point in x:
         # try:
@@ -110,6 +114,51 @@ def info_iphone_speed():
         count=count_points(device_id='iPhone13'),
         gpx=False
     )
+
+
+@landing_bp.route('/info_query', methods=['GET'])
+def info_query_no_data():
+    return render_template(
+        "info_query.html",
+        device_ids = get_devices(),
+        points = [],
+        count = 0
+    )
+
+
+@landing_bp.route('/info_query', methods=['POST'])
+def info_query_with_data():
+    mod = request.form.get('mod', 20)
+    time = request.form.get('time', "all")
+    device_id = request.form.get('device_id', "")
+
+    filter_property_name = request.form.get('filter_by', "")
+    filter_value = request.form.get('filter_value', 0)
+
+    filter_funcs = {
+        'battery_level': lambda x: filter_property(x, 'battery_level', operator.lt, int(filter_value)/100),
+        # Convert Meters/second to MPH
+        'speed': lambda x: filter_property(x, 'speed', operator.gt, int(filter_value)/ 2.237) 
+    }
+    if filter_property_name != "":
+        filter_lambda = filter_funcs[filter_property_name]
+    else:
+        filter_lambda = lambda x: x
+
+
+    # op = lambda point, value: point > value
+
+    return render_template(
+        "info_query.html",
+        device_ids = get_devices(),
+        points = get_points(
+            device_id=device_id,
+            mod=mod,time=time,
+            filter_func=filter_lambda 
+        )
+    )
+
+
 @landing_bp.route('/info', methods=['GET'])
 def info():
     return render_template(
