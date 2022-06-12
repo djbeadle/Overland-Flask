@@ -2,6 +2,7 @@ from http.client import HTTPResponse
 from flask import jsonify, request, render_template, Response
 from app.landing import landing_bp
 from db_operations import create_thing, list_all_things, record_point, get_points, count_points
+import operator
 
 import json
 
@@ -42,16 +43,71 @@ def info_mbp():
     return render_template(
         'info2.html',
         points=get_points(device_id='mbp2021'),
-        count=count_points(device_id='mbp2021'),
+        info=f'{count_points(device_id="mbp2021")} points recorded for MacBook. Color coding is based on time.',
         loads=json.loads,
         gpx=False
     )
 
 @landing_bp.route('/info4', methods=['GET'])
 def info_iphone2():
+    mod=20
+    return render_template( 'info2.html', points=get_points(device_id='iPhone13', mod=mod, time='all'), info=f'{count_points(device_id="iPhone13")} points recorded for iPhone. Showing 1 out of every {mod} points. Large green datapoints are new, small red datapoints are old. The entire time range is shown',
+        loads=json.loads,
+        gpx=False
+    )
+@landing_bp.route('/info5', methods=['GET'])
+def info_iphone_last_day():
     return render_template(
         'info2.html',
-        points=get_points(device_id='iPhone13', mod=50, time='all'),
+        info=f'{count_points(device_id="iPhone13")} points recorded for iPhone. Showing 1 in 5 points for the last two days. Color coding is based on time.',
+        points=get_points(device_id='iPhone13', mod=5, time='2', filter_func=lambda x: x),
+        count=count_points(device_id='iPhone13'),
+        loads=json.loads,
+        gpx=False
+    )
+
+def filter_property(x, prop_name, op, value):
+    out = []
+    for point in x:
+        # try:
+        pj = json.loads(point['data'])
+
+        if op(pj['properties'].get(prop_name, 0), value):
+            out += [point]
+        """
+        except Exception as e:
+            print("Error while filtering by property")
+            print(e)
+            print(point)
+        """
+    return out
+            
+@landing_bp.route('/info_bat', methods=['GET'])
+def info_iphone_bat():
+    mod = 20
+    time = 'all'
+    max_battery = 50
+    return render_template(
+        'info2.html',
+        info=f'Showing {count_points(device_id="iPhone13")} points recorded for iPhone where battery is < {max_battery}%. Showing 1 in {mod} points for the last two days. Color coding is based on time.',
+        points=get_points(device_id='iPhone13', mod=mod, filter_func=lambda x: filter_property(x, 'battery_level', operator.lt, max_battery/100), time=time),
+        count=count_points(device_id='iPhone13'),
+        loads=json.loads,
+        gpx=False
+    )
+
+@landing_bp.route('/info_speed', methods=['GET'])
+def info_iphone_speed():
+    op = lambda point, value: point>value #and 'driving' not in point['properties']['motion']
+    mod = 10
+    time = 'all'
+    prop_val= 10 # mph
+    prop_name = 'speed'
+    # op = operator.gt
+    return render_template(
+        'info2.html',
+        info=f'Showing {count_points(device_id="iPhone13")} points recorded for iPhone where speed is > {prop_val} mph. Showing 1 in {mod} points for the last two days. Color coding is based on time.',
+        points=get_points(device_id='iPhone13', mod=mod, filter_func=lambda x: filter_property(x, prop_name, op, prop_val /  2.237), time=time),
         count=count_points(device_id='iPhone13'),
         loads=json.loads,
         gpx=False

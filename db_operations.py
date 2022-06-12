@@ -8,12 +8,15 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(current_app.config['DB_NAME'])
+        db.row_factory = sqlite3.Row
     return db
 
+
+# SELECT JSON_EXTRACT(data, '$.properties.altitude') FROM datapoints ORDER BY rowid DESC LIMIT 1;
 def record_point(point, trip):
     db = get_db()
     cur = db.cursor()
-    print(json.dumps(point))
+    # print(json.dumps(point))
     try:
         cur.execute(
             "INSERT INTO datapoints (device_id, timestamp, data, trip) VALUES (?, ?, ?, ?);",
@@ -25,11 +28,11 @@ def record_point(point, trip):
         print(e)
         raise e
 
-def get_points(device_id='iPhone13', limit=2000, mod=20, time='all'):
+def get_points(device_id='iPhone13', filter_func=None, limit=2000, mod=20, time='all'):
     db = get_db()
     cur = db.cursor()
 
-    query = "SELECT data FROM datapoints WHERE device_id = ? AND rowid % ? = 0"
+    query = "SELECT data FROM datapoints WHERE device_id = ? AND rowid % ? = 0 "
     if time.lower() == 'all':
         pass
     else:
@@ -38,11 +41,12 @@ def get_points(device_id='iPhone13', limit=2000, mod=20, time='all'):
     cur.execute(
         # "SELECT data FROM datapoints WHERE device_id = ? AND rowid % 20 = 0 ORDER BY timestamp DESC LIMIT ?;",
         query,
-        [
-            device_id, 
-            mod
-        ]
+        [ device_id, mod ]
     ) 
+    
+    if filter_func:
+        return filter_func(cur.fetchall())
+
     return cur.fetchall()
 
 def count_points(device_id='iPhone13'):
