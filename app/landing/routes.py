@@ -69,9 +69,9 @@ def filter_property(x, prop_name, op, value):
     out = []
     for point in x:
         # try:
-        pj = json.loads(point['data'])
+        pj = point
 
-        if op(pj['properties'].get(prop_name, 0), value):
+        if op(pj[prop_name] or 0, value):
             out += [point]
         """
         except Exception as e:

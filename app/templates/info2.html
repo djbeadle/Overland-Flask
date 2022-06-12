@@ -104,7 +104,7 @@ function getColorAltitude(x) {
 
 const latlngs = [
     {% for point in points %}
-        { "type": "Feature", 'geometry': {"type": "Point", "coordinates": ['{{point.lat}}', '{{point.long}}']}, 'properties': {'timestamp': '{{point.timestamp}}', 'speed': '{{point.speed}}', 'battery_level': '{{battery_level}}'}}, 
+        { "type": "Feature", 'geometry': {"type": "Point", "coordinates": ['{{point.lat}}', '{{point.long}}']}, 'properties': {'timestamp': '{{point.timestamp}}', 'speed': '{{point.speed}}', 'battery_level': '{{point.battery_level}}'}}, 
     {% endfor %}
 ];
 
