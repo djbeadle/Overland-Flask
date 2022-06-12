@@ -52,7 +52,6 @@ def info_mbp():
 def info_iphone2():
     mod=20
     return render_template( 'info2.html', points=get_points(device_id='iPhone13', mod=mod, time='all'), info=f'{count_points(device_id="iPhone13")} points recorded for iPhone. Showing 1 out of every {mod} points. Large green datapoints are new, small red datapoints are old. The entire time range is shown',
-        loads=json.loads,
         gpx=False
     )
 @landing_bp.route('/info5', methods=['GET'])
@@ -109,7 +108,6 @@ def info_iphone_speed():
         info=f'Showing {count_points(device_id="iPhone13")} points recorded for iPhone where speed is > {prop_val} mph. Showing 1 in {mod} points for the last two days. Color coding is based on time.',
         points=get_points(device_id='iPhone13', mod=mod, filter_func=lambda x: filter_property(x, prop_name, op, prop_val /  2.237), time=time),
         count=count_points(device_id='iPhone13'),
-        loads=json.loads,
         gpx=False
     )
 @landing_bp.route('/info', methods=['GET'])

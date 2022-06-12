@@ -16,12 +16,34 @@ def get_db():
 def record_point(point, trip):
     db = get_db()
     cur = db.cursor()
+    
+    pp = point['properties']
     # print(json.dumps(point))
     try:
-        cur.execute(
-            "INSERT INTO datapoints (device_id, timestamp, data, trip) VALUES (?, ?, ?, ?);",
-            [point['properties']['device_id'], point['properties']['timestamp'], json.dumps(point), trip ]
+        cur.execute("""
+            INSERT INTO datapoints_2 (
+                lat,
+                long,
+                timestamp,
+                altitude,
+                speed,
+                h_accuracy,
+                v_accuracy,
+                motion,
+                battery_state,
+                battery_level,
+                wifi,
+                device_id
+            ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            [ point['geometry']['coordinates'][0], point['geometry']['coordinates'][1], pp['timestamp'], pp['altitude'], pp['speed'], pp['horizontal_accuracy'], pp['vertical_accuracy'], json.dumps(pp['motion']), pp['battery_state'], pp['battery_level'], pp['wifi'], pp['device_id'] ]
         )
+   
+        # cur.execute(
+        #    "INSERT INTO datapoints (device_id, timestamp, data, trip) VALUES (?, ?, ?, ?);",
+        #    [point['properties']['device_id'], point['properties']['timestamp'], json.dumps(point), trip ]
+        #)
+
         db.commit()
     except Exception as e:
         print("Unable to store this data point:")
@@ -32,7 +54,7 @@ def get_points(device_id='iPhone13', filter_func=None, limit=2000, mod=20, time=
     db = get_db()
     cur = db.cursor()
 
-    query = "SELECT data FROM datapoints WHERE device_id = ? AND rowid % ? = 0 "
+    query = "SELECT lat, long, timestamp, battery_level, speed, device_id FROM datapoints_2 WHERE device_id = ? AND rowid % ? = 0 "
     if time.lower() == 'all':
         pass
     else:
@@ -53,7 +75,7 @@ def count_points(device_id='iPhone13'):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT count(data) FROM datapoints WHERE device_id = ?;",
+        "SELECT count(*) FROM datapoints_2 WHERE device_id = ?;",
        [device_id]
     )
     return cur.fetchone()[0]
