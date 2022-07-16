@@ -115,14 +115,25 @@ def info_iphone_speed():
         gpx=False
     )
 
+IQ_TIMES = [
+  ['all', 'All'],
+  ['0.5', 'Last 12 hours'],
+  ['1', 'Last 1 day'],
+  ['2', 'Last 2 days'],
+  ['7', 'Last 7 days'],
+  ['14', 'Last 14 days'],
+  ['30', 'Last 30 days'],
+]
 
 @landing_bp.route('/info_query', methods=['GET'])
 def info_query_no_data():
     return render_template(
         "info_query.html",
+        form={},
         device_ids = get_devices(),
         points = [],
-        count = 0
+        count = 0,
+        time_filters = IQ_TIMES
     )
 
 
@@ -151,11 +162,13 @@ def info_query_with_data():
     return render_template(
         "info_query.html",
         device_ids = get_devices(),
+        form=request.form,
         points = get_points(
             device_id=device_id,
             mod=mod,time=time,
             filter_func=filter_lambda 
-        )
+        ),
+        time_filters = IQ_TIMES
     )
 
 

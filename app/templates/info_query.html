@@ -10,6 +10,7 @@ integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf
 crossorigin=""></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script src="/static/luxon.min.js"></script>
+<title>Daniel GIS</title>
 
 <style>
     body {
@@ -39,20 +40,24 @@ crossorigin=""></script>
                 {% for device_id in device_ids %}
                     {% if loop.first %}
                         <option default>{{ device_id[0] }}</option>
+                    {% else %}
+                        <option>{{ device_id[0] }}</option>
                     {% endif %}
-                    <option>{{ device_id[0] }}</option>
                 {% endfor %}
             </select>
         </label>
 
         <label>
             Time:
-            <select name="time" id="time">
-                <option default value="all">All</option>
-                <option value="2">Last 2 days</option>
-                <option value="7">Last 7 days</option>
-                <option value="2">Last 14 days</option>
-                <option value="2">Last 30 days</option>
+            <select selected="{{ form.get('time') }}" name="time" id="time">
+                {% for time in time_filters %}
+                    <option
+                        value="{{time[0]}}"
+                        {% if time[0] == form['time'] %}
+                        selected
+                        {% endif %}
+                    >{{time[1]}}</option>
+                {% endfor %}
             </select>
         </label>
 
