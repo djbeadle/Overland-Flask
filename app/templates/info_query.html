@@ -64,11 +64,13 @@ crossorigin=""></script>
         <label>
             Mod:
             <select name="mod" id="time">
-                <option default >20</option>
+                <option default >10</option>
                 <option>2</option>
                 <option>5</option>
                 <option>10</option>
                 <option>25</option>
+                <option>50</option>
+                <option>100</option>
             </select>
         </label>
 
@@ -84,6 +86,14 @@ crossorigin=""></script>
         <label>
             Filter value:
             <input name="filter_value" type="number">
+        </label>
+
+        <label>
+            GPX
+            <select name="show_gpx">
+                <option default value="no">No</option>
+                <option value="yes">Yes</option>
+            </select>
         </label>
 
         <button type="submit">Apply Filter</button>

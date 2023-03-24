@@ -60,7 +60,7 @@ def get_points(device_id='iPhone13', filter_func=None, limit=2000, mod=20, time=
     db = get_db()
     cur = db.cursor()
 
-    query = "SELECT lat, long, timestamp, battery_level, speed, device_id FROM datapoints_2 WHERE device_id = ? AND rowid % ? = 0 "
+    query = "SELECT ROUND(CAST (lat AS NUMERIC), 4) as lat, ROUND(CAST(long AS NUMERIC), 4) as long, timestamp, battery_level, speed, device_id FROM datapoints_2 WHERE device_id = ? AND rowid % ? = 0 "
     if time.lower() == 'all':
         pass
     else:

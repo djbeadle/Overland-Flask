@@ -165,7 +165,8 @@ def info_query_with_data():
         form=request.form,
         points = get_points(
             device_id=device_id,
-            mod=mod,time=time,
+            mod=mod,
+            time=time,
             filter_func=filter_lambda 
         ),
         time_filters = IQ_TIMES
